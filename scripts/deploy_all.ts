@@ -2,6 +2,7 @@ import * as hre from "hardhat";
 import * as fs from "fs";
 import { Signer } from "ethers";
 const ethers = hre.ethers;
+const upgrades = hre.upgrades;
 import { Config } from "./config";
 
 import { Greeter__factory, Greeter } from "../typechain-types";
@@ -27,12 +28,21 @@ async function main() {
 
     console.log("ACCOUNT: " + admin);
 
-    const greeter: Greeter = await Greeter.deploy(Config.greeter);
+    const greeter = await upgrades.deployProxy(Greeter, [], {
+        kind: "uups",
+    });
 
-    console.log("Greeter deployed at: ", greeter.address);
+    console.log("Greeter deployed at:", greeter.address);
+    console.log(
+        "Greeter implementation deployed at,",
+        await upgrades.erc1967.getImplementationAddress(greeter.address),
+    );
 
     const contractAddress = {
         greeter: greeter.address,
+        implementation: await upgrades.erc1967.getImplementationAddress(
+            greeter.address,
+        ),
     };
 
     fs.writeFileSync("contracts.json", JSON.stringify(contractAddress));
