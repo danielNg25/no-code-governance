@@ -3,7 +3,6 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 import { GovernorFactory__factory, GovernorFactory } from "../typechain-types";
-import * as fs from "fs";
 describe("Greater", () => {
     let user: SignerWithAddress;
     let governorFactory: GovernorFactory;
@@ -20,7 +19,9 @@ describe("Greater", () => {
     });
 
     describe("Deployment", () => {
-        it("Should deploy successfully", async () => {});
+        it("Should deploy successfully", async () => {
+            expect(await governorFactory.owner()).to.equal(user.address);
+        });
     });
 
     describe("Set governor preset address", () => {
