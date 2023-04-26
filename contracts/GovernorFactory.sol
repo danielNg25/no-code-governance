@@ -11,7 +11,7 @@ contract GovernorFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     using Bytes32ToAddressMapUpgradeable for Bytes32ToAddressMapUpgradeable.Bytes32ToAddressMap;
 
     Bytes32ToAddressMapUpgradeable.Bytes32ToAddressMap private governorPresets;
-    Bytes32ToAddressMapUpgradeable.Bytes32ToAddressMap private voteTokenPreset;
+    Bytes32ToAddressMapUpgradeable.Bytes32ToAddressMap private voteTokenPresets;
 
     // ========== Events ==========
 
@@ -42,18 +42,27 @@ contract GovernorFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     function addVoteTokenPreset(
         string calldata _name,
-        address _voteTokenPreset
+        address _voteTokenPresets
     ) external onlyOwner isValidName(_name) {
         uint8 nameLength = uint8(bytes(_name).length);
         bytes32 bytesName = bytes32(abi.encodePacked(_name));
-        voteTokenPreset.set(bytesName, _voteTokenPreset, nameLength);
+        voteTokenPresets.set(bytesName, _voteTokenPresets, nameLength);
     }
 
     // ========== Public functions ==========
 
     // ========== View functions ==========
-    function getAllGovernorPreset() external view returns (string[] memory) {
+    function getAllGovernorPresets() external view returns (string[] memory) {
         bytes[] memory keysBytes = governorPresets.keysPacked();
+        string[] memory keys = new string[](keysBytes.length);
+        for (uint256 i = 0; i < keysBytes.length; i++) {
+            keys[i] = string(keysBytes[i]);
+        }
+        return keys;
+    }
+
+    function getAllVoteTokenPresets() external view returns (string[] memory) {
+        bytes[] memory keysBytes = voteTokenPresets.keysPacked();
         string[] memory keys = new string[](keysBytes.length);
         for (uint256 i = 0; i < keysBytes.length; i++) {
             keys[i] = string(keysBytes[i]);
@@ -72,7 +81,7 @@ contract GovernorFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         string calldata _name
     ) external view isValidName(_name) returns (address) {
         bytes32 bytesName = bytes32(abi.encodePacked(_name));
-        return voteTokenPreset.get(bytesName);
+        return voteTokenPresets.get(bytesName);
     }
 
     // ========== Private functions ==========

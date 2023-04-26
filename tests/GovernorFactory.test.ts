@@ -34,18 +34,35 @@ describe("Greater", () => {
             ).to.revertedWith("GovernorFactory: invalid name");
         });
 
-        it("Should set successfully", async () => {
+        it("Should set governor preset successfully", async () => {
             await governorFactory.addGovernorPreset(
                 "SimpeGovernor",
                 governorFactory.address,
             );
 
-            const allPreset = await governorFactory.getAllGovernorPreset();
+            const allPreset = await governorFactory.getAllGovernorPresets();
             expect(allPreset.length).to.equal(1);
-            console.log(allPreset[0]);
+            console.log(allPreset);
             expect(allPreset[0]).to.equal("SimpeGovernor");
             console.log(
                 await governorFactory.getGovernorPresetAddress("SimpeGovernor"),
+            );
+        });
+
+        it("Should set vote token preset successfully", async () => {
+            await governorFactory.addVoteTokenPreset(
+                "SimpleVoteToken",
+                governorFactory.address,
+            );
+
+            const allPreset = await governorFactory.getAllVoteTokenPresets();
+            expect(allPreset.length).to.equal(1);
+            console.log(allPreset);
+            expect(allPreset[0]).to.equal("SimpleVoteToken");
+            console.log(
+                await governorFactory.getVoteTokenPresetAddress(
+                    "SimpleVoteToken",
+                ),
             );
         });
     });
