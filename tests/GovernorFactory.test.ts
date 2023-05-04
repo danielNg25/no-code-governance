@@ -94,21 +94,21 @@ describe("Greater", () => {
         });
 
         it("Should create governor successfully", async () => {
-            let blocknumber = await ethers.provider.getBlockNumber();
+            const blocknumber = await ethers.provider.getBlockNumber();
             await governorFactory.createGovernor(
                 "SimpleGovernor",
                 "SimpleVoteToken",
             );
 
-            let governor = governorFactory.governors(0);
+            const governor = governorFactory.governors(0);
             const TimelockControllerFactory = await ethers.getContractFactory(
                 "TimelockController",
             );
-            let timelockClone = TimelockControllerFactory.attach(
+            const timelockClone = TimelockControllerFactory.attach(
                 (await governor).timelock,
             );
 
-            let hello = await timelockClone.hello();
+            const hello = await timelockClone.hello();
 
             console.log(hello);
         });

@@ -3,8 +3,6 @@ import * as fs from "fs";
 import { Signer } from "ethers";
 const ethers = hre.ethers;
 const upgrades = hre.upgrades;
-import { Config } from "./config";
-import { GovernorFactory, TimelockController } from "../typechain-types";
 
 async function main() {
     //Loading accounts
@@ -29,7 +27,7 @@ async function main() {
 
     console.log("ACCOUNT: " + admin);
 
-    let timelock = await TimelockControllerFactory.deploy();
+    const timelock = await TimelockControllerFactory.deploy();
     await timelock.deployed();
     const governorFactory = await upgrades.deployProxy(
         GovernorFactory,
