@@ -9,11 +9,28 @@ import "./libraries/Bytes32ToAddressMapUpgradeable.sol";
 
 contract GovernorFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     using Bytes32ToAddressMapUpgradeable for Bytes32ToAddressMapUpgradeable.Bytes32ToAddressMap;
+    using ClonesUpgradeable for address;
 
     Bytes32ToAddressMapUpgradeable.Bytes32ToAddressMap private governorPresets;
     Bytes32ToAddressMapUpgradeable.Bytes32ToAddressMap private voteTokenPresets;
+    address public timelockController;
+    uint256 private totalGovernor;
+    mapping(uint256 => Governor) public governors;
+
+    struct Governor {
+        address governor;
+        address voteToken;
+        address timelock;
+    }
 
     // ========== Events ==========
+
+    event GovernorCreated(
+        uint256 id,
+        address governor,
+        address voteToken,
+        address timelock
+    );
 
     // ========== Modifiers ==========
 
@@ -24,7 +41,8 @@ contract GovernorFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     // ========== Gorvernance ==========
 
-    function initialize() public initializer {
+    function initialize(address _timelockController) public initializer {
+        timelockController = _timelockController;
         __Ownable_init();
     }
 
@@ -51,6 +69,22 @@ contract GovernorFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     // ========== Public functions ==========
 
+    function createGovernor(
+        string calldata _governorPreset,
+        string calldata _voteTokenPreset
+    ) external returns (address governor, address voteToken, address timelock) {
+        governor = getGovernorPresetAddress(_governorPreset).clone();
+        voteToken = getVoteTokenPresetAddress(_voteTokenPreset).clone();
+        timelock = timelockController.clone();
+
+        uint256 governorId = totalGovernor;
+        governors[governorId] = Governor(governor, voteToken, timelock);
+
+        emit GovernorCreated(governorId, governor, voteToken, timelock);
+
+        totalGovernor++;
+    }
+
     // ========== View functions ==========
     function getAllGovernorPresets() external view returns (string[] memory) {
         bytes[] memory keysBytes = governorPresets.keysPacked();
@@ -72,14 +106,14 @@ contract GovernorFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     function getGovernorPresetAddress(
         string calldata _name
-    ) external view isValidName(_name) returns (address) {
+    ) public view isValidName(_name) returns (address) {
         bytes32 bytesName = bytes32(abi.encodePacked(_name));
         return governorPresets.get(bytesName);
     }
 
     function getVoteTokenPresetAddress(
         string calldata _name
-    ) external view isValidName(_name) returns (address) {
+    ) public view isValidName(_name) returns (address) {
         bytes32 bytesName = bytes32(abi.encodePacked(_name));
         return voteTokenPresets.get(bytesName);
     }

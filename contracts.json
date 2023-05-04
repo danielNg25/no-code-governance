@@ -1,4 +1,5 @@
 {
-    "marketplace": "0xf9A6302AD30Eb3D4256Ba275b402F5873c4cB97F",
-    "nft": "0xFea14763FdBEaE3BBeDEE44040E503bC2744B92a"
+    "governor": "0x5A8AFBc4e094C7f60F45E017216cFa883d3f0524",
+    "implementation": "0x64886E98EA5FaafCe541c1dcF723d8206A70FFA0",
+    "timelock": "0x7a2b273c87ec8419e92263db00398a48f2c05d5a"
 }

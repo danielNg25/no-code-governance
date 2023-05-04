@@ -2,25 +2,36 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-import { GovernorFactory__factory, GovernorFactory } from "../typechain-types";
+import { GovernorFactory, TimelockController } from "../typechain-types";
 describe("Greater", () => {
     let user: SignerWithAddress;
     let governorFactory: GovernorFactory;
+    let timelock: TimelockController;
 
     beforeEach(async () => {
         const accounts: SignerWithAddress[] = await ethers.getSigners();
         user = accounts[0];
 
-        const GovernorFactory: GovernorFactory__factory =
-            await ethers.getContractFactory("GovernorFactory");
+        const GovernorFactory = await ethers.getContractFactory(
+            "GovernorFactory",
+        );
         governorFactory = await GovernorFactory.deploy();
 
-        await governorFactory.initialize();
+        const TimelockControllerFactory = await ethers.getContractFactory(
+            "TimelockController",
+        );
+        timelock = await TimelockControllerFactory.deploy();
+
+        await governorFactory.initialize(timelock.address);
     });
 
     describe("Deployment", () => {
         it("Should deploy successfully", async () => {
             expect(await governorFactory.owner()).to.equal(user.address);
+
+            expect(await governorFactory.timelockController()).to.equal(
+                timelock.address,
+            );
         });
     });
 
@@ -36,16 +47,18 @@ describe("Greater", () => {
 
         it("Should set governor preset successfully", async () => {
             await governorFactory.addGovernorPreset(
-                "SimpeGovernor",
+                "SimpleGovernor",
                 governorFactory.address,
             );
 
             const allPreset = await governorFactory.getAllGovernorPresets();
             expect(allPreset.length).to.equal(1);
             console.log(allPreset);
-            expect(allPreset[0]).to.equal("SimpeGovernor");
+            expect(allPreset[0]).to.equal("SimpleGovernor");
             console.log(
-                await governorFactory.getGovernorPresetAddress("SimpeGovernor"),
+                await governorFactory.getGovernorPresetAddress(
+                    "SimpleGovernor",
+                ),
             );
         });
 
@@ -64,6 +77,40 @@ describe("Greater", () => {
                     "SimpleVoteToken",
                 ),
             );
+        });
+    });
+
+    describe("Create governor", () => {
+        beforeEach(async () => {
+            await governorFactory.addGovernorPreset(
+                "SimpleGovernor",
+                governorFactory.address,
+            );
+
+            await governorFactory.addVoteTokenPreset(
+                "SimpleVoteToken",
+                governorFactory.address,
+            );
+        });
+
+        it("Should create governor successfully", async () => {
+            let blocknumber = await ethers.provider.getBlockNumber();
+            await governorFactory.createGovernor(
+                "SimpleGovernor",
+                "SimpleVoteToken",
+            );
+
+            let governor = governorFactory.governors(0);
+            const TimelockControllerFactory = await ethers.getContractFactory(
+                "TimelockController",
+            );
+            let timelockClone = TimelockControllerFactory.attach(
+                (await governor).timelock,
+            );
+
+            let hello = await timelockClone.hello();
+
+            console.log(hello);
         });
     });
 });

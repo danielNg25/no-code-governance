@@ -4,8 +4,7 @@ import { Signer } from "ethers";
 const ethers = hre.ethers;
 const upgrades = hre.upgrades;
 import { Config } from "./config";
-
-import { Greeter__factory, Greeter } from "../typechain-types";
+import { GovernorFactory, TimelockController } from "../typechain-types";
 
 async function main() {
     //Loading accounts
@@ -13,8 +12,10 @@ async function main() {
     const admin = await accounts[0].getAddress();
     //Loading contracts' factory
 
-    const Greeter: Greeter__factory = await ethers.getContractFactory(
-        "Greeter",
+    const GovernorFactory = await ethers.getContractFactory("GovernorFactory");
+
+    const TimelockControllerFactory = await ethers.getContractFactory(
+        "TimelockController",
     );
 
     // Deploy contracts
@@ -28,21 +29,31 @@ async function main() {
 
     console.log("ACCOUNT: " + admin);
 
-    const greeter = await upgrades.deployProxy(Greeter, [], {
-        kind: "uups",
-    });
+    let timelock = await TimelockControllerFactory.deploy();
+    await timelock.deployed();
+    const governorFactory = await upgrades.deployProxy(
+        GovernorFactory,
+        [timelock.address],
+        {
+            kind: "uups",
+        },
+    );
 
-    console.log("Greeter deployed at:", greeter.address);
+    await governorFactory.deployed();
+    console.log("governorFactory deployed at:", governorFactory.address);
     console.log(
-        "Greeter implementation deployed at,",
-        await upgrades.erc1967.getImplementationAddress(greeter.address),
+        "governorFactory implementation deployed at,",
+        await upgrades.erc1967.getImplementationAddress(
+            governorFactory.address,
+        ),
     );
 
     const contractAddress = {
-        greeter: greeter.address,
+        governor: governorFactory.address,
         implementation: await upgrades.erc1967.getImplementationAddress(
-            greeter.address,
+            governorFactory.address,
         ),
+        timelock: timelock.address,
     };
 
     fs.writeFileSync("contracts.json", JSON.stringify(contractAddress));
