@@ -3,10 +3,13 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 import { GovernorFactory, TimelockController } from "../typechain-types";
+import { StandardGovernor, ERC20VotesStandard } from "../typechain-types";
 describe("Greater", () => {
     let user: SignerWithAddress;
     let governorFactory: GovernorFactory;
     let timelock: TimelockController;
+    let standardGovernor: StandardGovernor;
+    let voteToken: ERC20VotesStandard;
 
     beforeEach(async () => {
         const accounts: SignerWithAddress[] = await ethers.getSigners();
@@ -21,6 +24,16 @@ describe("Greater", () => {
             "TimelockController",
         );
         timelock = await TimelockControllerFactory.deploy();
+
+        const StandardGovernorFactory = await ethers.getContractFactory(
+            "StandardGovernor",
+        );
+        standardGovernor = await StandardGovernorFactory.deploy();
+
+        const ERC20VotesStandardFactory = await ethers.getContractFactory(
+            "ERC20VotesStandard",
+        );
+        voteToken = await ERC20VotesStandardFactory.deploy();
 
         await governorFactory.initialize(timelock.address);
     });
@@ -40,7 +53,7 @@ describe("Greater", () => {
             await expect(
                 governorFactory.addGovernorPreset(
                     "This is a very long preset name that exceed 32 bytes",
-                    governorFactory.address,
+                    standardGovernor.address,
                 ),
             ).to.revertedWith("GovernorFactory: invalid name");
         });
@@ -48,35 +61,34 @@ describe("Greater", () => {
         it("Should set governor preset successfully", async () => {
             await governorFactory.addGovernorPreset(
                 "SimpleGovernor",
-                governorFactory.address,
+                standardGovernor.address,
             );
 
             const allPreset = await governorFactory.getAllGovernorPresets();
             expect(allPreset.length).to.equal(1);
-            console.log(allPreset);
             expect(allPreset[0]).to.equal("SimpleGovernor");
-            console.log(
+
+            expect(
                 await governorFactory.getGovernorPresetAddress(
                     "SimpleGovernor",
                 ),
-            );
+            ).to.equal(standardGovernor.address);
         });
 
         it("Should set vote token preset successfully", async () => {
             await governorFactory.addVoteTokenPreset(
                 "SimpleVoteToken",
-                governorFactory.address,
+                voteToken.address,
             );
 
             const allPreset = await governorFactory.getAllVoteTokenPresets();
             expect(allPreset.length).to.equal(1);
-            console.log(allPreset);
             expect(allPreset[0]).to.equal("SimpleVoteToken");
-            console.log(
+            expect(
                 await governorFactory.getVoteTokenPresetAddress(
                     "SimpleVoteToken",
                 ),
-            );
+            ).to.equal(voteToken.address);
         });
     });
 
@@ -89,28 +101,48 @@ describe("Greater", () => {
 
             await governorFactory.addVoteTokenPreset(
                 "SimpleVoteToken",
-                governorFactory.address,
+                voteToken.address,
             );
         });
 
         it("Should create governor successfully", async () => {
             const blocknumber = await ethers.provider.getBlockNumber();
+
+            const governorInitializeSelector =
+                standardGovernor.interface.getSighash("initialize");
+            const governorInitializeData = ethers.utils.defaultAbiCoder.encode(
+                ["uint256", "uint256", "uint256", "uint256", "string"],
+                [4, 1000, 1000, 1000, "SimpleGovernor"],
+            );
+
+            const _voteTokenInitializeData =
+                voteToken.interface.encodeFunctionData("initialize", [
+                    "SimpleVoteToken",
+                    "SVT",
+                ]);
             await governorFactory.createGovernor(
                 "SimpleGovernor",
+                governorInitializeSelector,
+                governorInitializeData,
                 "SimpleVoteToken",
+                _voteTokenInitializeData,
+                1000,
+                [],
+                [],
+                ethers.constants.AddressZero,
             );
 
             const governor = governorFactory.governors(0);
-            const TimelockControllerFactory = await ethers.getContractFactory(
-                "TimelockController",
-            );
-            const timelockClone = TimelockControllerFactory.attach(
-                (await governor).timelock,
-            );
+            // const TimelockControllerFactory = await ethers.getContractFactory(
+            //     "TimelockController",
+            // );
+            // const timelockClone = TimelockControllerFactory.attach(
+            //     (await governor).timelock,
+            // );
 
-            const hello = await timelockClone.hello();
+            // const hello = await timelockClone.hello();
 
-            console.log(hello);
+            // console.log(hello);
         });
     });
 });

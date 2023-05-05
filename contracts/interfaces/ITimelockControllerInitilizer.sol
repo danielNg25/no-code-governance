@@ -3,13 +3,11 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/governance/TimelockControllerUpgradeable.sol";
 
-contract TimelockController is TimelockControllerUpgradeable {
+interface ITimelockControllerInitilizer {
     function initialize(
         uint256 minDelay,
         address[] memory proposers,
         address[] memory executors,
         address admin
-    ) public initializer {
-        __TimelockController_init(minDelay, proposers, executors, admin);
-    }
+    ) external;
 }
