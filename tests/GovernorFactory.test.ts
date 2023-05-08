@@ -96,8 +96,9 @@ describe("Greater", () => {
         beforeEach(async () => {
             await governorFactory.addGovernorPreset(
                 "SimpleGovernor",
-                governorFactory.address,
+                standardGovernor.address,
             );
+            console.log("Governor", governorFactory.address);
 
             await governorFactory.addVoteTokenPreset(
                 "SimpleVoteToken",
@@ -106,43 +107,71 @@ describe("Greater", () => {
         });
 
         it("Should create governor successfully", async () => {
-            const blocknumber = await ethers.provider.getBlockNumber();
+            let salt = ethers.utils.formatBytes32String("This is a salt");
+            let voteTokenDeterministic =
+                await governorFactory.predictVoteTokenDeterministicAddress(
+                    "SimpleVoteToken",
+                    salt,
+                );
+            let timelockDeterministic =
+                await governorFactory.predictTimelockDeterministicAddress(salt);
 
-            const governorInitializeSelector =
-                standardGovernor.interface.getSighash("initialize");
-            const governorInitializeData = ethers.utils.defaultAbiCoder.encode(
-                ["uint256", "uint256", "uint256", "uint256", "string"],
-                [4, 1000, 1000, 1000, "SimpleGovernor"],
-            );
+            const governorInitializeData =
+                standardGovernor.interface.encodeFunctionData("initialize", [
+                    voteTokenDeterministic,
+                    timelockDeterministic,
+                    10,
+                    10,
+                    10,
+                    10,
+                    "MyGovernor",
+                ]);
 
-            const _voteTokenInitializeData =
+            const voteTokenInitializeData =
                 voteToken.interface.encodeFunctionData("initialize", [
                     "SimpleVoteToken",
                     "SVT",
                 ]);
+
             await governorFactory.createGovernor(
                 "SimpleGovernor",
-                governorInitializeSelector,
                 governorInitializeData,
                 "SimpleVoteToken",
-                _voteTokenInitializeData,
-                1000,
-                [],
-                [],
-                ethers.constants.AddressZero,
+                voteTokenInitializeData,
+                {
+                    timelockMinDelay: 1000,
+                    timelockExecutors: [],
+                    timelockAdmin: user.address,
+                    timelockProposers: [],
+                },
+                salt,
             );
 
             const governor = governorFactory.governors(0);
-            // const TimelockControllerFactory = await ethers.getContractFactory(
-            //     "TimelockController",
-            // );
-            // const timelockClone = TimelockControllerFactory.attach(
-            //     (await governor).timelock,
-            // );
 
-            // const hello = await timelockClone.hello();
+            const TimelockControllerFactory = await ethers.getContractFactory(
+                "TimelockController",
+            );
+            const timelockClone = TimelockControllerFactory.attach(
+                (await governor).timelock,
+            );
+            expect(await timelockClone.getMinDelay()).to.equal(1000);
 
-            // console.log(hello);
+            const StandardGovernorFactory = await ethers.getContractFactory(
+                "StandardGovernor",
+            );
+            const governorClone = StandardGovernorFactory.attach(
+                (await governor).governor,
+            );
+            expect(await governorClone.name()).to.equal("MyGovernor");
+
+            const ERC20VotesStandardFactory = await ethers.getContractFactory(
+                "ERC20VotesStandard",
+            );
+            const voteTokenClone = ERC20VotesStandardFactory.attach(
+                (await governor).voteToken,
+            );
+            expect(await voteTokenClone.name()).to.equal("SimpleVoteToken");
         });
     });
 });

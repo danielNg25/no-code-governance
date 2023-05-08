@@ -24,7 +24,7 @@ contract StandardGovernor is
         uint256 initialVotingPeriod,
         uint256 initialProposalThreshold,
         string calldata name
-    ) public initializer {
+    ) public initializer returns (bool) {
         __Governor_init(name);
         __GovernorTimelockControl_init(timelock);
         __GovernorVotes_init(token);
@@ -35,6 +35,8 @@ contract StandardGovernor is
             initialVotingPeriod,
             initialProposalThreshold
         );
+
+        return true;
     }
 
     function votingDelay()

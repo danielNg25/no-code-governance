@@ -7,7 +7,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./libraries/Bytes32ToAddressMapUpgradeable.sol";
 import "./interfaces/ITimelockControllerInitilizer.sol";
-import "hardhat/console.sol";
 
 contract GovernorFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     using Bytes32ToAddressMapUpgradeable for Bytes32ToAddressMapUpgradeable.Bytes32ToAddressMap;
@@ -23,6 +22,13 @@ contract GovernorFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         address governor;
         address voteToken;
         address timelock;
+    }
+
+    struct TimelockInitializeParams {
+        uint256 timelockMinDelay;
+        address[] timelockProposers;
+        address[] timelockExecutors;
+        address timelockAdmin;
     }
 
     // ========== Events ==========
@@ -73,53 +79,50 @@ contract GovernorFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     function createGovernor(
         string calldata _governorPreset,
-        bytes calldata _governorInitializeSelector,
         bytes calldata _governorInitializeData,
         string calldata _voteTokenPreset,
         bytes calldata _voteTokenInitializeData,
-        uint256 timelockMinDelay,
-        address[] memory timelockProposers,
-        address[] memory timelockExecutors,
-        address timelockAdmin
+        TimelockInitializeParams calldata _timelockParams,
+        bytes32 salt
     ) external returns (address governor, address voteToken, address timelock) {
-        governor = getGovernorPresetAddress(_governorPreset).clone();
-        voteToken = getVoteTokenPresetAddress(_voteTokenPreset).clone();
-        timelock = timelockController.clone();
+        governor = getGovernorPresetAddress(_governorPreset).cloneDeterministic(
+                salt
+            );
+        voteToken = getVoteTokenPresetAddress(_voteTokenPreset)
+            .cloneDeterministic(salt);
+        timelock = timelockController.cloneDeterministic(salt);
 
         (bool success, bytes memory result) = voteToken.call(
             _voteTokenInitializeData
         );
 
-        require(success, "GovernorFactory: failed to initialize vote token");
+        require(
+            success,
+            "GovernorFactory: failed to call initialize vote token"
+        );
 
         bool initialized = abi.decode(result, (bool));
-        require(
-            initialized,
-            "GovernorFactory: wrong initialize function selector"
-        );
+        require(initialized, "GovernorFactory: failed to initialize governor");
 
-        bytes memory _governorCalldata = abi.encode(
-            _governorInitializeSelector,
-            voteToken,
-            timelock,
+        (bool success_2, bytes memory result_2) = governor.call(
             _governorInitializeData
         );
-        (bool success_2, bytes memory result_2) = governor.call(
-            _governorCalldata
-        );
 
-        require(success_2, "GovernorFactory: failed to initialize governor");
+        require(
+            success_2,
+            "GovernorFactory: failed to call initialize governor"
+        );
         bool initialized_2 = abi.decode(result_2, (bool));
         require(
             initialized_2,
-            "GovernorFactory: wrong initialize function selector"
+            "GovernorFactory: failed to initialize governor"
         );
 
         ITimelockControllerInitilizer(timelock).initialize(
-            timelockMinDelay,
-            timelockProposers,
-            timelockExecutors,
-            timelockAdmin
+            _timelockParams.timelockMinDelay,
+            _timelockParams.timelockProposers,
+            _timelockParams.timelockExecutors,
+            _timelockParams.timelockAdmin
         );
 
         uint256 governorId = totalGovernor;
@@ -130,7 +133,33 @@ contract GovernorFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         totalGovernor++;
     }
 
+    function initializeGovernor() external {}
+
     // ========== View functions ==========
+    function predictGovernorDeterministicAddress(
+        string calldata _governorPreset,
+        bytes32 _salt
+    ) external view returns (address) {
+        return
+            getGovernorPresetAddress(_governorPreset)
+                .predictDeterministicAddress(_salt);
+    }
+
+    function predictVoteTokenDeterministicAddress(
+        string calldata _voteTokenPreset,
+        bytes32 _salt
+    ) external view returns (address) {
+        return
+            getVoteTokenPresetAddress(_voteTokenPreset)
+                .predictDeterministicAddress(_salt);
+    }
+
+    function predictTimelockDeterministicAddress(
+        bytes32 _salt
+    ) external view returns (address) {
+        return timelockController.predictDeterministicAddress(_salt);
+    }
+
     function getAllGovernorPresets() external view returns (string[] memory) {
         bytes[] memory keysBytes = governorPresets.keysPacked();
         string[] memory keys = new string[](keysBytes.length);
