@@ -4,7 +4,7 @@
     "description": "A template for developing smart contract with solidity and hardhat.",
     "main": "index.js",
     "scripts": {
-        "clean": "shx rm -rf ./artifacts ./cache ./coverage ./types ./coverage.json && npm run typechain",
+        "clean": "rm -rf ./artifacts ./cache ./coverage ./types ./coverage.json && npm run typechain",
         "prepare": "husky install && npx husky add .husky/pre-commit \"npm run lint\"",
         "test": "hardhat test",
         "coverage": "npx hardhat coverage --solcoverjs ./.solcoverjs --testfiles \"tests/*.ts\"",
