@@ -86,8 +86,8 @@ contract GovernorFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         bytes32 salt
     ) external returns (address governor, address voteToken, address timelock) {
         governor = getGovernorPresetAddress(_governorPreset).cloneDeterministic(
-                salt
-            );
+            salt
+        );
         voteToken = getVoteTokenPresetAddress(_voteTokenPreset)
             .cloneDeterministic(salt);
         timelock = timelockController.cloneDeterministic(salt);

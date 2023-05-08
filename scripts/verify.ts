@@ -1,6 +1,5 @@
 import * as hre from "hardhat";
 import * as contracts from "../contracts.json";
-import { Config } from "./config";
 
 async function main() {
     try {

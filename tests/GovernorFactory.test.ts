@@ -107,13 +107,13 @@ describe("Greater", () => {
         });
 
         it("Should create governor successfully", async () => {
-            let salt = ethers.utils.formatBytes32String("This is a salt");
-            let voteTokenDeterministic =
+            const salt = ethers.utils.formatBytes32String("This is a salt");
+            const voteTokenDeterministic =
                 await governorFactory.predictVoteTokenDeterministicAddress(
                     "SimpleVoteToken",
                     salt,
                 );
-            let timelockDeterministic =
+            const timelockDeterministic =
                 await governorFactory.predictTimelockDeterministicAddress(salt);
 
             const governorInitializeData =
