@@ -55,6 +55,7 @@
         "web3": "^1.8.2"
     },
     "dependencies": {
+        "@hashgraph/sdk": "^2.24.2",
         "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
         "@openzeppelin/contracts": "^4.8.3",
         "@openzeppelin/contracts-upgradeable": "^4.8.3",
